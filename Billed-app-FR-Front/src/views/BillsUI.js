@@ -24,7 +24,7 @@ const rows = (data) => {
     ? 
       data
         // Sort bills in descending order by date (latest to earliest) before mapping them into the array
-        .sort((a, b) => (a.date < b.date ? 1 : -1))
+        .sort((a, b) => new Date(b.date) - new Date(a.date))
         .map(bill => row(bill))
         .join("") 
     : ""
