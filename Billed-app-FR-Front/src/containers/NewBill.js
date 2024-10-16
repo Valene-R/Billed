@@ -20,6 +20,35 @@ export default class NewBill {
     const file = this.document.querySelector(`input[data-testid="file"]`).files[0]
     const filePath = e.target.value.split(/\\/g)
     const fileName = filePath[filePath.length-1]
+
+    const allowedExtensions = ['jpg', 'jpeg', 'png']
+    const fileExtension = fileName.split('.').pop().toLowerCase()
+
+    // Check if the user canceled the file selection
+    if (!file) {
+      return
+    }
+
+    // Remove the existing error message before checking the validity of the file
+    const currentErrorMessage = this.document.querySelector('.error-message')
+    if (currentErrorMessage) {
+      currentErrorMessage.remove()
+    }
+
+    // Check if the file has a valid extension (jpg, jpeg, png)
+    // If the file is not valid, display an error message and reset the input
+    if (!allowedExtensions.includes(fileExtension)) {
+      // Create the error message
+      const errorMessage = document.createElement('p')
+      errorMessage.className = 'error-message'
+      errorMessage.textContent = 'Seuls les fichiers de type jpg, jpeg, ou png sont acceptés.'
+
+      // Add the error message after the file input field
+      e.target.parentNode.appendChild(errorMessage)
+      e.target.value = '' // Reset the input file to prevent sending the invalid file
+      return
+    }
+
     const formData = new FormData()
     const email = JSON.parse(localStorage.getItem("user")).email
     formData.append('file', file)
