@@ -146,3 +146,116 @@ describe("Given I am connected as an employee", () => {
     })
   })
 })
+
+
+// GET Integration Test
+describe("Given I am connected as an employee", () => {
+  describe("When I am on Bills page and I call getBills", () => {
+    // Test if bills fetched from the mock API are sorted correctly
+    test("Then it should fetch the bills from mock API and display them sorted by date", async () => {
+      // Mock API
+      const billsInstance = new Bills({ document, onNavigate, store: mockStore, localStorage: window.localStorage })
+      const bills = await billsInstance.getBills()
+
+      expect(bills.length).toBe(4) // Ensure that 4 bills are returned
+      expect(bills[0].date).toBeDefined() // Check if the date is defined
+      expect(bills[0].status).toBeDefined() // Check if the status is defined
+      
+      // Verify that the bills are sorted in descending order of date
+      for (let i = 0; i < bills.length - 1; i++) {
+        const date1 = new Date(bills[i].date).getTime()
+        const date2 = new Date(bills[i + 1].date).getTime()
+      
+        if (!isNaN(date1) && !isNaN(date2)) {  // Ensure both dates are valid before comparing
+          expect(date1).toBeGreaterThan(date2)
+        }
+      }
+    })
+  })
+
+  describe("When I am on Bills page and there is invalid data", () => {
+    // Test if invalid data is logged and handled
+    test("Then it should log an error and return the unformatted date", async () => {
+      const invalidBills = [{
+        id: "47qAXb6fIm2zOKkLzMro",
+        date: "invalid-date", // Simulate a bill with an invalid date format to trigger an error
+        status: "pending"
+      }]
+      
+      // Mock the API to return invalid Bills
+      const mockStoreWithError = {
+        bills() {
+          return {
+            list: () => Promise.resolve(invalidBills)
+          }
+        }
+      }
+
+      // Spy console.log to verify that it is called with an error
+      const logSpy = jest.spyOn(console, 'log')
+      
+      // Create an instance of Bills with the mocked store
+      const billsInstance = new Bills({ document, onNavigate, store: mockStoreWithError, localStorage: window.localStorage })
+      const bills = await billsInstance.getBills()
+
+      // Ensure one invalid bill is returned
+      expect(bills.length).toBe(1)
+
+      // Verify that the error is logged for the invalid date
+      expect(logSpy).toHaveBeenCalledWith(expect.any(Error), 'for', expect.any(Object))
+
+      // Restore the original behavior of console.log
+      logSpy.mockRestore()
+    })
+  })
+
+  // Test to check error handling for API fails (404 and 500)
+  describe("When I navigate to Bills page and an error occurs on API", () => {
+    // Set up mock store and localStorage before each test
+    beforeEach(() => {
+      jest.spyOn(mockStore, "bills")
+      Object.defineProperty(window, 'localStorage', { value: localStorageMock })
+      window.localStorage.setItem('user', JSON.stringify({
+        type: 'Employee',
+        email: "a@a"
+      }))
+      document.body.innerHTML = `<div id="root"></div>`
+      router()
+    })
+
+    // Test if API returns a 404 error and the correct message is displayed
+    test("fetches bills from an API and fails with 404 message error", async () => {
+      // Mock API to return a 404 error
+      mockStore.bills.mockImplementationOnce(() => {
+        return {
+          list: () => Promise.reject(new Error("Erreur 404"))
+        }
+      })
+
+      // Simulate navigating to Bills page
+      window.onNavigate(ROUTES_PATH.Bills)
+      await new Promise(process.nextTick) // Wait for the API to fail
+
+      // Verify if the 404 error message is displayed
+      const message = await screen.getByText(/Erreur 404/)
+      expect(message).toBeTruthy()
+    })
+
+    // Test if API returns a 500 error and the correct message is displayed
+    test("fetches bills from an API and fails with 500 message error", async () => {
+      // Mock API to return a 500 error
+      mockStore.bills.mockImplementationOnce(() => {
+        return {
+          list: () => Promise.reject(new Error("Erreur 500"))
+        }
+      })
+    
+      window.onNavigate(ROUTES_PATH.Bills)
+      await new Promise(process.nextTick)
+    
+      // Verify if the 500 error message is displayed
+      const message = await screen.getByText(/Erreur 500/)
+      expect(message).toBeTruthy()
+    })
+  })
+})
