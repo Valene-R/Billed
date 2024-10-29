@@ -2,9 +2,16 @@
  * @jest-environment jsdom
  */
 
-import { screen } from "@testing-library/dom"
+import { screen, fireEvent, waitFor } from "@testing-library/dom"
+import mockStore from "../__mocks__/store.js"
 import NewBillUI from "../views/NewBillUI.js"
 import NewBill from "../containers/NewBill.js"
+import { localStorageMock } from "../__mocks__/localStorage.js"
+import { ROUTES_PATH } from "../constants/routes.js"
+import router from "../app/Router"
+
+// Mock the store (API)
+jest.mock('../app/store', () => mockStore)
 
 
 describe("Given I am connected as an employee", () => {
@@ -23,6 +30,33 @@ describe("Given I am connected as an employee", () => {
       document.body.innerHTML = html
       const fileInput = screen.getByTestId("file")
       expect(fileInput).toBeTruthy()
+    })
+
+    // Test if a valid file (jpg, jpeg, png) can be uploaded
+    test("Then I can upload a valid file (jpg, jpeg, png)", async () => {
+      // Initialize a new instance of NewBill
+      const newBill = new NewBill({ 
+        document, onNavigate: jest.fn(), store: null, localStorage: window.localStorage 
+      })
+
+      // Select the file input field in the NewBill form
+      const fileInput = screen.getByTestId("file")
+
+      // Create a mock file with valid type (jpg)
+      const file = new File(["valid image"], "image.jpg", { type: "image/jpg" })
+
+      // Mock the handleChangeFile method of newBill instance
+      const handleChangeFile = jest.fn(newBill.handleChangeFile)
+      fileInput.addEventListener("change", handleChangeFile)
+
+      // Trigger the change event with the mock file to simulate file upload
+      fireEvent.change(fileInput, { target: { files: [file] } })
+
+      // Verify that handleChangeFile has been called
+      expect(handleChangeFile).toHaveBeenCalled()
+
+      // Wait for the file name in the input to match the uploaded file's name
+      await waitFor(() => expect(fileInput.files[0].name).toBe("image.jpg"))
     })
   })
 })
