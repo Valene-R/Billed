@@ -217,7 +217,7 @@ describe("Given I am connected as an employee", () => {
     })
 
     // Test if an error is logged when there is an issue during bill update
-    test('then it should log an error if there is an issue during bill update', async () => {
+    test("Then it should log an error if there is an issue during bill update", async () => {
       // Mock the update method to simulate a failed API response
       const mockUpdate = jest.fn().mockRejectedValueOnce(new Error('Update failed'))
 
@@ -297,6 +297,123 @@ describe("Given I am connected as an employee", () => {
       await waitFor(() => {
         expect(console.error).toHaveBeenCalledWith("Bill ID is not defined, cannot update the bill.")
       })
+    })
+  })
+})
+
+
+// POST Integration Test
+describe("Given I am a user connected as Employee", () => {
+  describe("When I submit a new bill", () => {
+    beforeEach(() => {
+      // Spy on the store's bills method to simulate API interaction
+      jest.spyOn(mockStore, "bills")
+      
+      // Set up localStorage with mock user data
+      Object.defineProperty(window, "localStorage", { value: localStorageMock })
+      window.localStorage.setItem("user", JSON.stringify({
+        type: "Employee",
+        email: "a@a"
+      }))
+
+      // Create a root element for the router
+      const root = document.createElement("div")
+      root.setAttribute("id", "root")
+      document.body.appendChild(root)
+      router()
+    })
+
+    // Test if the new bill is successfully created via mock API POST
+    test("creates new bill from mock API POST", async () => {
+      const onNavigate = jest.fn()
+
+      // Mock the create method of bills to simulate a successful response
+      jest.spyOn(mockStore.bills(), "create").mockResolvedValue({
+        fileUrl: "https://localhost:3456/images/test.jpg",
+        key: "1234"
+      })
+
+      const newBill = new NewBill({ 
+        document, onNavigate, store: mockStore, localStorage: window.localStorage 
+      })
+
+      // Select the form element and simulate submission
+      const form = screen.getByTestId('form-new-bill')
+      const handleSubmit = jest.fn(newBill.handleSubmit)
+      form.addEventListener("submit", handleSubmit)
+      fireEvent.submit(form)
+
+      // Verify that handleSubmit has been called upon form submission
+      await waitFor(() => expect(handleSubmit).toHaveBeenCalled())
+
+      // Verify that the create method has been called with the correct data
+      expect(mockStore.bills().create).toHaveBeenCalledWith(expect.objectContaining({
+        data: expect.any(FormData),
+        headers: { noContentType: true }
+      }))
+
+      // Verify that the navigation to the Bills page has occurred
+      await waitFor(() => expect(onNavigate).toHaveBeenCalledWith(ROUTES_PATH.Bills))
+    })
+
+    // Test if a 404 error is correctly handled during bill creation
+    test("creates new bill and fails with 404 message error", async () => {
+      // Mock the create method to simulate a 404 error
+      mockStore.bills.mockImplementationOnce(() => ({
+        create: jest.fn().mockRejectedValue(new Error("Erreur 404"))
+      }))
+
+      const onNavigate = jest.fn()
+      const newBill = new NewBill({ 
+        document, onNavigate, store: mockStore, localStorage: window.localStorage 
+      })
+
+      const form = screen.getByTestId('form-new-bill')
+      const handleSubmit = jest.fn(newBill.handleSubmit)
+      form.addEventListener("submit", handleSubmit)
+      fireEvent.submit(form)
+
+      // Spy on console.error to verify if it logs the expected error message
+      const consoleErrorSpy = jest.spyOn(console, 'error')
+
+      await waitFor(() => expect(handleSubmit).toHaveBeenCalled())
+
+      // Verify that the 404 error has been logged
+      await waitFor(() => {
+        expect(consoleErrorSpy).toHaveBeenCalledWith('Error during bill creation or file upload:', expect.any(Error))
+      })
+
+      // Clean up the spy
+      consoleErrorSpy.mockRestore()
+    })
+
+    // Test if a 500 error is correctly handled from the API during bill creation
+    test("creates new bill and fails with 500 message error", async () => {
+      // Mock the create method to simulate a 500 error
+      mockStore.bills.mockImplementationOnce(() => ({
+        create: jest.fn().mockRejectedValue(new Error("Erreur 500"))
+      }))
+
+      const onNavigate = jest.fn()
+      const newBill = new NewBill({ document, onNavigate, store: mockStore, localStorage: window.localStorage })
+
+      const form = screen.getByTestId('form-new-bill')
+      const handleSubmit = jest.fn(newBill.handleSubmit)
+      form.addEventListener("submit", handleSubmit)
+      fireEvent.submit(form)
+
+      // Spy on console.error to verify if it logs the expected error message
+      const consoleErrorSpy = jest.spyOn(console, 'error')
+
+      await waitFor(() => expect(handleSubmit).toHaveBeenCalled())
+
+      // Verify that the 500 error has been logged
+      await waitFor(() => {
+        expect(consoleErrorSpy).toHaveBeenCalledWith('Error during bill creation or file upload:', expect.any(Error))
+      })
+
+      // Clean up the spy
+      consoleErrorSpy.mockRestore()
     })
   })
 })
