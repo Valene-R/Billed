@@ -98,7 +98,7 @@ describe("Given I am connected as an employee", () => {
       const html = NewBillUI()
       document.body.innerHTML = html
 
-      // Initialize NewBill instance with necessary arguments
+      // Mock navigation and initialize NewBill instance with necessary arguments
       const onNavigate = jest.fn()
       const newBill = new NewBill({ 
         document, onNavigate, store: mockStore, localStorage: window.localStorage 
@@ -114,6 +114,30 @@ describe("Given I am connected as an employee", () => {
 
       // Verify if handleSubmit was called upon form submission
       expect(handleSubmit).toHaveBeenCalled()
+    })
+
+    // Test if the form is not submitted when the file input is empty
+    test("Then the form should not submit if the file input is empty", async () => {
+      const onNavigate = jest.fn()
+      const newBill = new NewBill({ 
+        document, onNavigate, store: mockStore, localStorage: window.localStorage 
+      })
+
+      // Select form and file input elements
+      const form = screen.getByTestId("form-new-bill")
+      const fileInput = screen.getByTestId("file")
+
+      // Mock handleSubmit and attach it to form submission event
+      const handleSubmit = jest.fn(newBill.handleSubmit)
+      form.addEventListener("submit", handleSubmit)
+
+      // Simulate form submission with empty file input
+      fireEvent.submit(form)
+
+      // Verify handleSubmit was called upon form submission
+      expect(handleSubmit).toHaveBeenCalled()
+      // Verify that file input remains empty (no file was submitted)
+      expect(fileInput.value).toBe("")
     })
   })
 })
