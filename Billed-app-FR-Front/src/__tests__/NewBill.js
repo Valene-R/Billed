@@ -83,4 +83,37 @@ describe("Given I am connected as an employee", () => {
       expect(fileInput.value).toBe("") 
     })
   })
+
+  describe("When I am on NewBill Page and I submit the form", () => {
+    // Test if form submission is triggered
+    test("Then the form submission should be triggered", () => {
+      // Mock localStorage and set the user details
+      Object.defineProperty(window, "localStorage", { value: localStorageMock })
+      window.localStorage.setItem("user", JSON.stringify({ 
+        type: 'Employee',
+        email: 'a@a' 
+      }))
+
+      // Render the NewBill form interface
+      const html = NewBillUI()
+      document.body.innerHTML = html
+
+      // Initialize NewBill instance with necessary arguments
+      const onNavigate = jest.fn()
+      const newBill = new NewBill({ 
+        document, onNavigate, store: mockStore, localStorage: window.localStorage 
+      })
+
+      // Select the form element and mock the handleSubmit method
+      const form = screen.getByTestId("form-new-bill")
+      const handleSubmit = jest.fn(newBill.handleSubmit)
+      form.addEventListener("submit", handleSubmit)
+
+      // Simulate form submission
+      fireEvent.submit(form)
+
+      // Verify if handleSubmit was called upon form submission
+      expect(handleSubmit).toHaveBeenCalled()
+    })
+  })
 })
