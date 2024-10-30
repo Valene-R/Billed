@@ -84,6 +84,32 @@ describe("Given I am connected as an employee", () => {
     })
   })
 
+  describe("When I am on the NewBill Page and I upload a file", () => {
+    test("Then it should not store the file if the user cancels the selection", async () => {
+      // Render the NewBill form interface and initialize the NewBill instance
+      const html = NewBillUI()
+      document.body.innerHTML = html
+      const newBill = new NewBill({ 
+        document, onNavigate: jest.fn(), store: null, localStorage: window.localStorage 
+      })
+
+      // Select the file input field
+      const fileInput = screen.getByTestId("file")
+
+      // Simulate file selection cancellation by setting an empty file
+      Object.defineProperty(fileInput, 'files', {
+        value: [] // No file selected
+      })
+
+      // Trigger the change event on the file input
+      fireEvent.change(fileInput) 
+
+      // Verify that no file information is stored in the NewBill instance
+      expect(newBill.file).toBeNull()
+      expect(newBill.fileName).toBeNull()
+    })
+  })
+
   describe("When I am on NewBill Page and I submit the form", () => {
     // Test if form submission is triggered
     test("Then the form submission should be triggered", () => {
