@@ -256,5 +256,47 @@ describe("Given I am connected as an employee", () => {
       // Verify that console.error was called with the expected error message
       await waitFor(() => expect(console.error).toHaveBeenCalledWith('Error during bill update:', expect.any(Error)))
     })
+
+    // Test if an error message is logged when billId is missing in the API response
+    test("Then it should log an error message if the billId is not defined", async () => {
+      const onNavigate = jest.fn()
+
+      // Define a mockStore with a bills function where create does not return a billId
+      const mockStore = {
+        bills: () => ({
+          create: jest.fn().mockResolvedValue({ fileUrl: "https://localhost:3456/images/test.jpg" }) // No billId returned
+        }),
+      };
+  
+      const newBill = new NewBill({ 
+        document, onNavigate, store: mockStore, localStorage: window.localStorage 
+      })
+      
+      // Mock localStorage and set user information
+      Object.defineProperty(window, 'localStorage', { value: localStorageMock })
+      window.localStorage.setItem('user', JSON.stringify({ 
+        type: 'Employee', 
+        email: 'a@a' 
+      }))
+  
+      document.body.innerHTML = NewBillUI()
+      const form = screen.getByTestId("form-new-bill")
+  
+      // Attach a mock handleSubmit function to simulate form submission
+      const handleSubmit = jest.fn(newBill.handleSubmit)
+      form.addEventListener("submit", handleSubmit)
+      fireEvent.submit(form)
+  
+      // Mock console.error to verify if it logs the expected error message
+      console.error = jest.fn() 
+  
+      // Verify if handleSubmit was called after submission
+      await waitFor(() => expect(handleSubmit).toHaveBeenCalled())
+  
+      // Verify that the error was logged when billId is missing
+      await waitFor(() => {
+        expect(console.error).toHaveBeenCalledWith("Bill ID is not defined, cannot update the bill.")
+      })
+    })
   })
 })
