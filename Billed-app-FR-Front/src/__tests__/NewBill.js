@@ -140,4 +140,54 @@ describe("Given I am connected as an employee", () => {
       expect(fileInput.value).toBe("")
     })
   })
+
+  describe("When I am on NewBill Page and I create a new bill", () => {
+    // Test if the file is uploaded and the bill is created
+    test("Then the file should be uploaded and the bill should be created", async () => {
+      const onNavigate = jest.fn()
+
+      // Mock the global fetch to simulate file upload response
+      global.fetch = jest.fn(() =>
+        Promise.resolve({
+          json: () => Promise.resolve({ fileUrl: "https://localhost:3456/images/test.jpg", key: "1234" })
+        })
+      )
+
+      // Define a mockStore with a mocked bills to simulate API interactions for creating and updating bill
+      const mockStore = {
+        bills: () => ({
+          create: jest.fn().mockResolvedValue({ fileUrl: "https://localhost:3456/images/test.jpg", key: "1234" }),
+          update: jest.fn().mockResolvedValue({})
+        }),
+      };
+
+      const newBill = new NewBill({ 
+        document, onNavigate, store: mockStore, localStorage: window.localStorage 
+      })
+
+      // Mock localStorage and set user data
+      Object.defineProperty(window, 'localStorage', { value: localStorageMock })
+      window.localStorage.setItem('user', JSON.stringify({ 
+        type: 'Employee', 
+        email: 'a@a' 
+      }))
+
+      // Render the NewBill form interface
+      document.body.innerHTML = NewBillUI()
+      const form = screen.getByTestId("form-new-bill")
+
+      // Attach mocked handleSubmit method to the form's submit event
+      const handleSubmit = jest.fn(newBill.handleSubmit)
+      form.addEventListener("submit", handleSubmit)
+
+      // Simulate form submission
+      fireEvent.submit(form)
+
+      // Verify that handleSubmit was called on form submission
+      await waitFor(() => expect(handleSubmit).toHaveBeenCalled())
+
+      // Verify that onNavigate was called with the Bills page route after submission
+      await waitFor(() => expect(onNavigate).toHaveBeenCalledWith(ROUTES_PATH.Bills))
+    })
+  })
 })
