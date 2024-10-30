@@ -58,5 +58,29 @@ describe("Given I am connected as an employee", () => {
       // Wait for the file name in the input to match the uploaded file's name
       await waitFor(() => expect(fileInput.files[0].name).toBe("image.jpg"))
     })
+
+    // Test if an error message is displayed when an invalid file type is uploaded
+    test("Then an error message should be displayed if the file has an invalid extension", async () => {
+      const newBill = new NewBill({ 
+        document, onNavigate: jest.fn(), store: null, localStorage: window.localStorage 
+      })
+      const fileInput = screen.getByTestId("file")
+
+      // Create a mock file with an invalid type (pdf)
+      const file = new File(["dummy content"], "test.pdf", { type: "application/pdf" })
+
+      const handleChangeFile = jest.fn(newBill.handleChangeFile)
+      fileInput.addEventListener("change", handleChangeFile)
+
+      fireEvent.change(fileInput, { target: { files: [file] } })
+
+      expect(handleChangeFile).toHaveBeenCalled()
+      
+      // Wait for the error message to be displayed for invalid file type
+      await waitFor(() => expect(screen.getByText("Seuls les fichiers de type jpg, jpeg, ou png sont acceptés.")).toBeTruthy())
+
+      // Verify if the file input is reset (no file retained) after an invalid file is uploaded
+      expect(fileInput.value).toBe("") 
+    })
   })
 })
