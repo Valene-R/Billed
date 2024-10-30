@@ -189,5 +189,46 @@ describe("Given I am connected as an employee", () => {
       // Verify that onNavigate was called with the Bills page route after submission
       await waitFor(() => expect(onNavigate).toHaveBeenCalledWith(ROUTES_PATH.Bills))
     })
+
+    // Test if an error is logged when there is an issue during bill update
+    test('then it should log an error if there is an issue during bill update', async () => {
+      // Mock the update method to simulate a failed API response
+      const mockUpdate = jest.fn().mockRejectedValueOnce(new Error('Update failed'))
+
+      // Initialize a NewBill instance with a mocked store where update will fail
+      const newBill = new NewBill({ 
+        document, 
+        onNavigate: jest.fn(), 
+        store: { bills: jest.fn().mockReturnValue({ update: mockUpdate }) }, 
+        localStorage: window.localStorage 
+      })
+
+      // Mock console.error to verify that it logs the expected error message during the test
+      console.error = jest.fn()
+
+      // Render the NewBill form interface
+      document.body.innerHTML = NewBillUI()
+
+      // Set a mock billId to simulate an existing bill being updated
+      newBill.billId = '1234'
+
+      // Define a mock bill object with test data for the update
+      const bill = { 
+        email: 'test@test.com', 
+        type: 'Transports', 
+        name: 'Test Bill', 
+        amount: 100, 
+        date: '2023-10-22', 
+        vat: '20', 
+        pct: 20, 
+        commentary: 'Test commentary'
+      }
+
+      // Call updateBill which should trigger the mocked error
+      await newBill.updateBill(bill)
+
+      // Verify that console.error was called with the expected error message
+      await waitFor(() => expect(console.error).toHaveBeenCalledWith('Error during bill update:', expect.any(Error)))
+    })
   })
 })
