@@ -15,7 +15,30 @@ export default class NewBill {
     this.fileName = null
     this.billId = null
     new Logout({ document, localStorage, onNavigate })
+
+    // Add an error message for the date field
+    const datepicker = this.document.querySelector(`input[data-testid="datepicker"]`)
+    const dateError = document.createElement('p')
+    dateError.className = 'error-message'
+    dateError.style.display = 'none' // Initially hide the error message
+    datepicker.parentNode.appendChild(dateError)
+
+    // Add an event listener to the date field to validate the selected date
+    datepicker.addEventListener("change", (e) => {
+      const selectedDate = new Date(e.target.value)
+      const currentDate = new Date()
+
+      // Check if the selected date is in the future
+      if (selectedDate > currentDate) {
+        dateError.textContent = "Vous ne pouvez pas entrer une date future."
+        dateError.style.display = 'block' 
+        e.target.value = "" // Reset the date field
+      } else {
+        dateError.style.display = 'none' 
+      }
+    })
   }
+
   handleChangeFile = e => {
     e.preventDefault()
     const file = this.document.querySelector(`input[data-testid="file"]`).files[0]
