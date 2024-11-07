@@ -97,8 +97,15 @@ export default class NewBill {
           noContentType: true
         }
       })
-      .then(({fileUrl, key}) => {
-        console.log(fileUrl)
+      .then(({ fileUrl, filePath, key }) => {
+        // Check if fileUrl is provided by the backend. If it's missing, construct it using filePath
+        // This ensures fileUrl is always defined, preventing issue with an 'undefined' fileUrl
+        if (!fileUrl && filePath) {
+          fileUrl = `${this.store.api.baseUrl}/${filePath}` // Use the baseUrl of the Store instance to complete the fileUrl
+        }
+      
+        console.log(fileUrl) // Now display the complete URL
+      
         this.billId = key
         this.fileUrl = fileUrl
         this.fileName = this.fileName
