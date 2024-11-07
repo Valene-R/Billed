@@ -2,6 +2,7 @@
  * @jest-environment jsdom
  */
 
+import "@testing-library/jest-dom"
 import { screen, fireEvent, waitFor } from "@testing-library/dom"
 import mockStore from "../__mocks__/store.js"
 import NewBillUI from "../views/NewBillUI.js"
@@ -61,6 +62,8 @@ describe("Given I am connected as an employee", () => {
 
     // Test if an error message is displayed when an invalid file type is uploaded
     test("Then an error message should be displayed if the file has an invalid extension", async () => {
+      const html = NewBillUI()
+      document.body.innerHTML = html
       const newBill = new NewBill({ 
         document, onNavigate: jest.fn(), store: null, localStorage: window.localStorage 
       })
@@ -85,6 +88,7 @@ describe("Given I am connected as an employee", () => {
   })
 
   describe("When I am on the NewBill Page and I upload a file", () => {
+    // Test to verify that no file is stored if the user cancels the file selection
     test("Then it should not store the file if the user cancels the selection", async () => {
       // Render the NewBill form interface and initialize the NewBill instance
       const html = NewBillUI()
@@ -107,6 +111,47 @@ describe("Given I am connected as an employee", () => {
       // Verify that no file information is stored in the NewBill instance
       expect(newBill.file).toBeNull()
       expect(newBill.fileName).toBeNull()
+    })
+  })
+
+  describe("When I am on NewBill Page and interacting with the date field", () => {
+    // Set up the NewBill form before each test
+    beforeEach(() => {
+      document.body.innerHTML = NewBillUI()
+      new NewBill({ document, onNavigate: jest.fn(), store: null, localStorage: window.localStorage })
+    })
+  
+    // Test if an error message is displayed when selecting a future date
+    test("then an error message should be shown when selecting a future date", () => {
+      const datepicker = screen.getByTestId('datepicker')
+      fireEvent.change(datepicker, { target: { value: '2025-01-01' } })
+  
+      // Check if the error message is displayed
+      const errorMessage = screen.queryByText("Vous ne pouvez pas entrer une date future.")
+      expect(errorMessage).toBeInTheDocument() // Verify the message is in the DOM
+      expect(errorMessage).toHaveStyle('display: block') // Verify the message is visible
+    })
+  
+    // Test if the error message is hidden when a valid date is selected
+    test("then the error message should be hidden when selecting a valid date", () => {
+      const datepicker = screen.getByTestId('datepicker')
+  
+      // Select a future date to show the error message
+      fireEvent.change(datepicker, { target: { value: '2025-01-01' } })
+  
+      // Change to a valid date and verify that the error message is hidden
+      fireEvent.change(datepicker, { target: { value: '2023-01-01' } })
+      const errorMessage = screen.queryByText("Vous ne pouvez pas entrer une date future.")
+      expect(errorMessage).toHaveStyle('display: none') 
+    })
+  
+    // Test if the date field resets when a future date is selected
+    test("then the date field should be reset when selecting a future date", () => {
+      const datepicker = screen.getByTestId('datepicker')
+      fireEvent.change(datepicker, { target: { value: '2025-01-01' } })
+  
+      // Verify that the date field is reset after selecting a future date
+      expect(datepicker.value).toBe("")
     })
   })
 
