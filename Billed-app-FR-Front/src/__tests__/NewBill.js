@@ -343,6 +343,72 @@ describe("Given I am connected as an employee", () => {
         expect(console.error).toHaveBeenCalledWith("Bill ID is not defined, cannot update the bill.")
       })
     })
+
+    // Test if fileUrl is built from baseUrl and filePath when fileUrl is missing in the API response
+    test("Then fileUrl should be built from baseUrl and filePath if fileUrl is missing", async () => {
+      const onNavigate = jest.fn()
+    
+      // Mock the store with a filePath and without fileUrl
+      const mockStore = {
+        api: {
+          baseUrl: "http://localhost:5678"
+        },
+        bills: () => ({
+          create: jest.fn().mockResolvedValue({
+            fileUrl: undefined, // Simulate the absence of fileUrl
+            filePath: "path/to/image.jpg", // Simulate a valid filePath
+            key: "1234" // Simulate a valid key
+          }),
+          update: jest.fn().mockResolvedValue({}) // Mock the update method
+        }),
+      }
+    
+      const newBill = new NewBill({ 
+        document, 
+        onNavigate, 
+        store: mockStore, 
+        localStorage: window.localStorage 
+      })
+    
+      // Mock localStorage to simulate a connected user
+      Object.defineProperty(window, 'localStorage', { value: localStorageMock })
+      window.localStorage.setItem('user', JSON.stringify({ 
+        type: 'Employee',
+        email: 'a@a' 
+      }))
+    
+      // Render the NewBill form
+      document.body.innerHTML = NewBillUI();
+      newBill.file = new File(["dummy content"], "test.jpg", { type: "image/jpg" })
+    
+      // Create a mock event with a target containing the necessary elements
+      const mockEvent = {
+        preventDefault: jest.fn(),
+        target: {
+          querySelector: jest.fn().mockReturnValue({ value: '2023-01-01' }) // Simulate datepicker value
+        }
+      }
+    
+      // Add a spy to check if updateBill is called
+      const updateBillSpy = jest.spyOn(newBill, 'updateBill')
+    
+      // Simulate form submission
+      await newBill.handleSubmit(mockEvent)
+    
+      // Verify if fileUrl is correctly built
+      expect(newBill.fileUrl).toBe(`${mockStore.api.baseUrl}/path/to/image.jpg`)
+    
+      // Verify if updateBill was called
+      expect(updateBillSpy).toHaveBeenCalled()
+    
+      // Verify if `onNavigate` was called with the Bills route
+      await waitFor(() => {
+        expect(onNavigate).toHaveBeenCalledWith(ROUTES_PATH.Bills)
+      })
+    
+      // Clean up the spy
+      updateBillSpy.mockRestore()
+    })
   })
 })
 
