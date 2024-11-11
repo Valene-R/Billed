@@ -211,7 +211,11 @@ describe("Given I am connected as an employee", () => {
       expect(fileInput.value).toBe("")
     })
   })
+})
 
+
+// POST Integration Test
+describe("Given I am a user connected as Employee", () => {
   describe("When I am on NewBill Page and I create a new bill", () => {
     // Test if the file is uploaded and the bill is created
     test("Then the file should be uploaded and the bill should be created", async () => {
@@ -410,11 +414,7 @@ describe("Given I am connected as an employee", () => {
       updateBillSpy.mockRestore()
     })
   })
-})
 
-
-// POST Integration Test
-describe("Given I am a user connected as Employee", () => {
   describe("When I submit a new bill", () => {
     beforeEach(() => {
       // Spy on the store's bills method to simulate API interaction
